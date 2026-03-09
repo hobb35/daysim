@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DaySim Dashboard</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --surface: #1a1d27;
+      --card:    #21253a;
+      --border:  #2e3350;
+      --accent:  #6c8bff;
+      --accent2: #a78bfa;
+      --green:   #4ade80;
+      --yellow:  #facc15;
+      --red:     #f87171;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --radius:  12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+    header h1 span { color: var(--accent); }
+
+    #save-source {
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--surface);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Level / XP ── */
+    .level-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .level-num { font-size: 2.4rem; font-weight: 800; color: var(--accent); }
+    .level-label { font-size: 0.85rem; color: var(--muted); }
+
+    .xp-bar-wrap {
+      background: var(--surface);
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .xp-bar {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.5s ease;
+    }
+    .xp-label { font-size: 0.75rem; color: var(--muted); }
+
+    /* ── Mood ── */
+    .mood-display {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .mood-VeryBad { color: var(--red); }
+    .mood-Bad     { color: #fb923c; }
+    .mood-Neutral { color: var(--yellow); }
+    .mood-Good    { color: #34d399; }
+    .mood-Great   { color: var(--green); }
+
+    /* ── Needs bars ── */
+    .need-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .need-row:last-child { margin-bottom: 0; }
+    .need-name { width: 58px; font-size: 0.78rem; color: var(--muted); flex-shrink: 0; }
+    .need-track { flex: 1; background: var(--surface); border-radius: 99px; height: 7px; overflow: hidden; }
+    .need-fill  { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+    .need-val   { width: 30px; text-align: right; font-size: 0.78rem; color: var(--muted); flex-shrink: 0; }
+
+    /* ── Log input ── */
+    .log-card { margin-bottom: 16px; }
+    .log-row { display: flex; gap: 10px; }
+    .log-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .log-row input:focus { border-color: var(--accent); }
+    .log-row input::placeholder { color: var(--muted); }
+    .log-row button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .log-row button:hover { opacity: 0.85; }
+    .log-row button:disabled { opacity: 0.4; cursor: default; }
+
+    #log-feedback {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      min-height: 18px;
+      transition: color 0.2s;
+    }
+    .fb-ok   { color: var(--green); }
+    .fb-err  { color: var(--red); }
+    .fb-hint { color: var(--yellow); }
+
+    /* ── Action history ── */
+    .history-list { list-style: none; }
+    .history-list li {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.84rem;
+    }
+    .history-list li:last-child { border-bottom: none; }
+    .h-time { color: var(--muted); white-space: nowrap; font-size: 0.75rem; min-width: 42px; }
+    .h-type { color: var(--accent); font-weight: 600; min-width: 100px; }
+    .h-raw  { color: var(--text); opacity: 0.75; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .h-dur  { color: var(--muted); font-size: 0.72rem; white-space: nowrap; margin-left: auto; }
+
+    /* ── Week chart ── */
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-cat { width: 72px; font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+    .bar-track { flex: 1; background: var(--surface); border-radius: 99px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.5s ease; }
+    .bar-count { width: 24px; text-align: right; font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+
+    /* ── Streaks ── */
+    .streak-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .streak-item {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .streak-days { font-size: 1.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .streak-cat  { font-size: 0.7rem; color: var(--muted); margin-top: 3px; }
+    .streak-best { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Achievements ── */
+    .ach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .ach-item {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.75rem;
+      opacity: 0.4;
+      transition: opacity 0.3s;
+    }
+    .ach-item.earned { opacity: 1; border: 1px solid var(--accent); }
+    .ach-title { font-weight: 600; color: var(--accent2); }
+    .ach-desc  { color: var(--muted); margin-top: 2px; font-size: 0.7rem; }
+
+    #refresh-time { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: 20px; }
+
+    /* toast */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 99px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.35s;
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Day<span>Sim</span> Dashboard</h1>
+  <span id="save-source">loading…</span>
+</header>
+
+<!-- Log bar -->
+<div class="card log-card">
+  <h2>Log an Action</h2>
+  <div class="log-row">
+    <input id="log-input" type="text"
+           placeholder="e.g. jogged 30 minutes, ate lunch, brushed teeth…"
+           autocomplete="off" />
+    <button id="log-btn">Log</button>
+  </div>
+  <div id="log-feedback"></div>
+</div>
+
+<!-- Stats row -->
+<div class="grid">
+  <!-- Level / XP -->
+  <div class="card">
+    <h2>Avatar Level</h2>
+    <div class="level-row">
+      <span class="level-num" id="level">—</span>
+      <span class="level-label">Current Level</span>
+    </div>
+    <div class="xp-bar-wrap"><div class="xp-bar" id="xp-bar" style="width:0%"></div></div>
+    <div class="xp-label" id="xp-label">—</div>
+  </div>
+
+  <!-- Mood -->
+  <div class="card">
+    <h2>Mood</h2>
+    <div class="mood-display" id="mood-display">—</div>
+    <div style="font-size:0.8rem;color:var(--muted)" id="mood-hint"></div>
+  </div>
+
+  <!-- Needs -->
+  <div class="card">
+    <h2>Needs</h2>
+    <div id="needs-bars"></div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid">
+  <!-- Week activity -->
+  <div class="card">
+    <h2>This Week</h2>
+    <div class="bar-chart" id="week-chart"></div>
+  </div>
+
+  <!-- Streaks -->
+  <div class="card">
+    <h2>Streaks</h2>
+    <div class="streak-grid" id="streaks"></div>
+  </div>
+
+  <!-- Achievements -->
+  <div class="card">
+    <h2>Achievements</h2>
+    <div class="ach-grid" id="achievements"></div>
+  </div>
+</div>
+
+<!-- History -->
+<div class="card">
+  <h2>Recent Actions</h2>
+  <ul class="history-list" id="history"></ul>
+</div>
+
+<div id="refresh-time"></div>
+<div id="toast"></div>
+
+<script>
+const NEED_COLORS = {
+  Hunger:  '#f97316',
+  Energy:  '#facc15',
+  Hygiene: '#34d399',
+  Fun:     '#a78bfa',
+  Social:  '#60a5fa',
+};
+
+const MOOD_EMOJI = {
+  VeryBad: '😣', Bad: '😕', Neutral: '😐', Good: '😊', Great: '😄'
+};
+
+const KNOWN_ACHIEVEMENTS = [
+  { id: 'first_action',       title: 'First Steps',     desc: 'Log your first action' },
+  { id: 'level_5',            title: 'Getting Serious', desc: 'Reach level 5' },
+  { id: 'level_10',           title: 'Habit Master',    desc: 'Reach level 10' },
+  { id: 'level_25',           title: 'Life Optimized',  desc: 'Reach level 25' },
+  { id: 'streak_3',           title: 'On a Roll',       desc: '3-day streak' },
+  { id: 'streak_7',           title: 'Week Warrior',    desc: '7-day streak' },
+  { id: 'streak_30',          title: 'Habit Locked',    desc: '30-day streak' },
+  { id: 'exercise_streak_7',  title: 'Fitness Fanatic', desc: 'Exercise 7 days' },
+  { id: 'hygiene_streak_7',   title: 'Clean Machine',   desc: 'Hygiene 7 days' },
+  { id: 'sleep_streak_7',     title: 'Sleep Champion',  desc: 'Sleep 7 days' },
+  { id: 'hydration_streak_7', title: 'Hydration Hero',  desc: 'Hydration 7 days' },
+  { id: 'quest_all',          title: 'Quest Complete',  desc: 'All daily quests done' },
+  { id: 'total_25',           title: 'Logging In',      desc: '25 actions logged' },
+  { id: 'total_100',          title: 'Dedicated',       desc: '100 actions logged' },
+  { id: 'total_500',          title: 'Consistent Life', desc: '500 actions logged' },
+];
+
+function fmtTime(isoStr) {
+  if (!isoStr) return '';
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+
+function fmtDur(min) {
+  if (!min) return '';
+  if (min < 60) return `${Math.round(min)}m`;
+  return `${(min/60).toFixed(1)}h`;
+}
+
+function needColor(val) {
+  if (val < 25) return 'var(--red)';
+  if (val < 50) return '#fb923c';
+  if (val < 75) return 'var(--yellow)';
+  return 'var(--green)';
+}
+
+async function loadState() {
+  const res = await fetch('/api/state');
+  const d = await res.json();
+
+  // Save source badge
+  document.getElementById('save-source').textContent =
+    d.saveSource === 'Unity save' ? '🎮 Unity save' : '🌐 Web save';
+
+  // Level / XP
+  document.getElementById('level').textContent = d.stats.level;
+  document.getElementById('xp-bar').style.width = d.stats.xpPercent + '%';
+  document.getElementById('xp-label').textContent =
+    `${d.stats.currentXp} / ${d.stats.xpNeeded} XP (${d.stats.xpPercent}%)`;
+
+  // Mood
+  const moodEl = document.getElementById('mood-display');
+  moodEl.textContent = (MOOD_EMOJI[d.mood] || '') + ' ' + d.mood;
+  moodEl.className = 'mood-display mood-' + d.mood;
+  const hintEl = document.getElementById('mood-hint');
+  const n = d.needs;
+  if (n.Hunger < 20) hintEl.textContent = '⚠ Starving!';
+  else if (n.Energy < 20) hintEl.textContent = '⚠ Exhausted!';
+  else hintEl.textContent = '';
+
+  // Needs bars
+  const needsEl = document.getElementById('needs-bars');
+  needsEl.innerHTML = Object.entries(d.needs).map(([k, v]) => `
+    <div class="need-row">
+      <span class="need-name">${k}</span>
+      <div class="need-track">
+        <div class="need-fill" style="width:${v}%;background:${NEED_COLORS[k]||'var(--accent)'}"></div>
+      </div>
+      <span class="need-val">${Math.round(v)}</span>
+    </div>`).join('');
+
+  // Week chart
+  const weekEl = document.getElementById('week-chart');
+  const counts = d.weekCounts;
+  const maxCount = Math.max(1, ...Object.values(counts));
+  if (Object.keys(counts).length === 0) {
+    weekEl.innerHTML = '<span style="color:var(--muted);font-size:0.8rem">No activity this week</span>';
+  } else {
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    weekEl.innerHTML = sorted.map(([cat, cnt]) => `
+      <div class="bar-row">
+        <span class="bar-cat">${cat}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${Math.round(cnt/maxCount*100)}%"></div>
+        </div>
+        <span class="bar-count">${cnt}</span>
+      </div>`).join('');
+  }
+
+  // Streaks
+  const catNames = { 10:'Sleep',20:'Hygiene',30:'Nutrition',40:'Hydration',50:'Exercise',60:'WorkStudy',70:'Relaxation' };
+  const streaksEl = document.getElementById('streaks');
+  const activeStreaks = (d.streaks || []).filter(s => s.CurrentStreakDays > 0);
+  if (activeStreaks.length === 0) {
+    streaksEl.innerHTML = '<span style="color:var(--muted);font-size:0.8rem;grid-column:1/-1">Log habits daily to build streaks</span>';
+  } else {
+    streaksEl.innerHTML = activeStreaks.map(s => `
+      <div class="streak-item">
+        <div class="streak-days">${s.CurrentStreakDays}</div>
+        <div class="streak-cat">${catNames[s.Category] || s.Category}</div>
+        <div class="streak-best">best ${s.BestStreakDays}d</div>
+      </div>`).join('');
+  }
+
+  // Achievements
+  const earnedIds = new Set((d.achievements || []).map(a => a.AchievementId));
+  document.getElementById('achievements').innerHTML = KNOWN_ACHIEVEMENTS.map(a => `
+    <div class="ach-item ${earnedIds.has(a.id) ? 'earned' : ''}">
+      <div class="ach-title">${earnedIds.has(a.id) ? '✓ ' : ''}${a.title}</div>
+      <div class="ach-desc">${a.desc}</div>
+    </div>`).join('');
+
+  // History
+  const histEl = document.getElementById('history');
+  if (!d.actions.length) {
+    histEl.innerHTML = '<li style="color:var(--muted);font-size:0.85rem">No actions logged yet — log one above!</li>';
+  } else {
+    histEl.innerHTML = d.actions.slice(0, 20).map(a => `
+      <li>
+        <span class="h-time">${fmtTime(a.timestamp)}</span>
+        <span class="h-type">${a.type}</span>
+        <span class="h-raw">${a.raw || ''}</span>
+        <span class="h-dur">${fmtDur(a.duration)}</span>
+      </li>`).join('');
+  }
+
+  document.getElementById('refresh-time').textContent =
+    'Updated ' + new Date().toLocaleTimeString();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function logAction() {
+  const input = document.getElementById('log-input');
+  const btn   = document.getElementById('log-btn');
+  const fb    = document.getElementById('log-feedback');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  btn.disabled = true;
+  fb.className = '';
+  fb.textContent = 'Logging…';
+
+  try {
+    const res = await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      fb.className = 'fb-ok';
+      fb.textContent = `✓ Logged ${data.logged} (+${data.xpAwarded} XP) — Mood: ${data.mood}`;
+      input.value = '';
+      showToast(`+${data.xpAwarded} XP · ${data.logged}`);
+      await loadState();
+    } else if (res.status === 422) {
+      fb.className = 'fb-hint';
+      fb.textContent = `⚠ ${data.hint || 'Unrecognized action'}`;
+    } else {
+      fb.className = 'fb-err';
+      fb.textContent = data.error || 'Error logging action';
+    }
+  } catch (e) {
+    fb.className = 'fb-err';
+    fb.textContent = 'Connection error';
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+// Wire up input
+document.getElementById('log-btn').addEventListener('click', logAction);
+document.getElementById('log-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') logAction();
+});
+
+// Initial load + auto-refresh every 30s
+loadState();
+setInterval(loadState, 30_000);
+</script>
+</body>
+</html>

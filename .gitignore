@@ -1,0 +1,40 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+*.pidb
+*.suo
+*.userprefs
+*.unityproj
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+MemoryCaptures/
+
+# Python / Flask
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+*.log
+
+# Save data (local only)
+webapp/daysim_save.json
+DaySim/daysim_save.json
+
+# OS
+.DS_Store
+Thumbs.db
